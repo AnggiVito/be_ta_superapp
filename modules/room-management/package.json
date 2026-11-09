@@ -1,0 +1,52 @@
+{
+  "name": "room-management-module",
+  "version": "1.0.0",
+  "description": "Room Management Module with TTLock Integration",
+  "type": "module",
+  "scripts": {
+    "test:connection": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js testing/ttlock-connection.test.js",
+    "test:connection:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch testing/ttlock-connection.test.js",
+    "test:passcode:temporary": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js testing/ttlock-passcode-temporary.test.js",
+    "test:passcode:temporary:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch testing/ttlock-passcode-temporary.test.js",
+    "test:passcode:permanent": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js testing/ttlock-passcode-permanent.test.js",
+    "test:passcode:permanent:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch testing/ttlock-passcode-permanent.test.js",
+    "test:passcode:onetime": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js testing/ttlock-passcode-onetime.test.js",
+    "test:passcode:onetime:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch testing/ttlock-passcode-onetime.test.js",
+    "test:passcode:custom-temporary": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js testing/ttlock-passcode-custom-temporary.test.js",
+    "test:passcode:custom-temporary:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch testing/ttlock-passcode-custom-temporary.test.js",
+    "test:passcode:custom-permanent": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js testing/ttlock-passcode-custom-permanent.test.js",
+    "test:passcode:custom-permanent:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch testing/ttlock-passcode-custom-permanent.test.js",
+    "test:passcode:history": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js testing/ttlock-passcode-history.test.js",
+    "test:passcode:history:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch testing/ttlock-passcode-history.test.js",
+    "test:fingerprint:session": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js testing/ttlock-fingerprint-session.test.js",
+    "test:fingerprint:session:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch testing/ttlock-fingerprint-session.test.js",
+    "test:card": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js testing/ttlock-card.test.js",
+    "test:card:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch testing/ttlock-card.test.js",
+    "test:battery": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js testing/ttlock-battery.test.js",
+    "test:battery:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch testing/ttlock-battery.test.js",
+    "test:room:service": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js testing/room-service.test.js",
+    "test:room:service:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch testing/room-service.test.js",
+    "test:room:validator": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js testing/room-validator.test.js",
+    "test:room:validator:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch testing/room-validator.test.js",
+    "test:room:rbac": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js testing/room-rbac.integration.test.js",
+    "test:room:rbac:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch testing/room-rbac.integration.test.js",
+    "test:room": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js testing/room-*.test.js",
+    "test:room:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch testing/room-*.test.js",
+    "test:all": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:all:watch": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
+    "test:all:coverage": "cross-env NODE_OPTIONS=\"--require dotenv/config\" DOTENV_CONFIG_PATH=\"../../.env\" node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
+  },
+  "keywords": [
+    "room-management",
+    "ttlock",
+    "testing"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jest": "^30.2.0"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0"
+  }
+}

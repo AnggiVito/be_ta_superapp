@@ -1,0 +1,264 @@
+name: fri-backend-prod
+
+services:
+  backend:
+    build: .
+    container_name: fri-backend
+    ports:
+      # BACKEND_HOST_PORT = port di host; app di dalam container selalu listen di 3000
+      - "${BACKEND_HOST_PORT:-${PORT:-3000}}:3000"
+    env_file:
+      - .env
+    environment:
+      - ENV_FILE=.env  # Explicitly set env file untuk aplikasi
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=3000
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+      - AUTH_GATEWAY_URL=${AUTH_GATEWAY_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - TTLOCK_API_URL=${TTLOCK_API_URL}
+      - TTLOCK_CLIENT_ID=${TTLOCK_CLIENT_ID}
+      - TTLOCK_CLIENT_SECRET=${TTLOCK_CLIENT_SECRET}
+      # Registration DB (port 5432 = inside Docker network, not host-mapped ports from .env)
+      - REGISTRATION_DB_HOST=${REGISTRATION_DB_HOST:-registration_db}
+      - REGISTRATION_DB_PORT=5432
+      - REGISTRATION_DB_USER=${REGISTRATION_DB_USER:-postgres}
+      - REGISTRATION_DB_PASSWORD=${REGISTRATION_DB_PASSWORD}
+      - REGISTRATION_DB_NAME=${REGISTRATION_DB_NAME:-registration_db}
+      # conduct_db: satu Postgres untuk modul conduct (EXECUTION_* legacy = pool yang sama)
+      - CONDUCT_DB_HOST=${CONDUCT_DB_HOST:-conduct_db}
+      - CONDUCT_DB_PORT=5432
+      - CONDUCT_DB_USER=${CONDUCT_DB_USER:-postgres}
+      - CONDUCT_DB_PASSWORD=${CONDUCT_DB_PASSWORD}
+      - CONDUCT_DB_NAME=${CONDUCT_DB_NAME:-conduct_db}
+      # User Management DB
+      - USER_MANAGEMENT_DB_HOST=${USER_MANAGEMENT_DB_HOST:-user_management_db}
+      - USER_MANAGEMENT_DB_PORT=5432
+      - USER_MANAGEMENT_DB_USER=${USER_MANAGEMENT_DB_USER:-postgres}
+      - USER_MANAGEMENT_DB_PASSWORD=${USER_MANAGEMENT_DB_PASSWORD}
+      - USER_MANAGEMENT_DB_NAME=${USER_MANAGEMENT_DB_NAME:-user_management_db}
+      # Room Management DB
+      - ROOM_MANAGEMENT_DB_HOST=${ROOM_MANAGEMENT_DB_HOST:-room_management_db}
+      - ROOM_MANAGEMENT_DB_PORT=5432
+      - ROOM_MANAGEMENT_DB_USER=${ROOM_MANAGEMENT_DB_USER:-postgres}
+      - ROOM_MANAGEMENT_DB_PASSWORD=${ROOM_MANAGEMENT_DB_PASSWORD}
+      - ROOM_MANAGEMENT_DB_NAME=${ROOM_MANAGEMENT_DB_NAME:-room_management_db}
+      # Reporting DB
+      - REPORTING_DB_HOST=${REPORTING_DB_HOST:-reporting_db}
+      - REPORTING_DB_PORT=5432
+      - REPORTING_DB_USER=${REPORTING_DB_USER:-postgres}
+      - REPORTING_DB_PASSWORD=${REPORTING_DB_PASSWORD}
+      - REPORTING_DB_NAME=${REPORTING_DB_NAME:-reporting_db}
+      # Redis
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      # Procurement DB
+      - PROCUREMENT_DB_HOST=${PROCUREMENT_DB_HOST:-procurement_db}
+      - PROCUREMENT_DB_PORT=5432
+      - PROCUREMENT_DB_USER=${PROCUREMENT_DB_USER:-postgres}
+      - PROCUREMENT_DB_PASSWORD=${PROCUREMENT_DB_PASSWORD}
+      - PROCUREMENT_DB_NAME=${PROCUREMENT_DB_NAME:-procurement_db}
+      # Migrations run on app startup (app.js); keep enabled for fresh containers
+      - RUN_MIGRATIONS=${RUN_MIGRATIONS:-true}
+      # Bootstrap
+      - FIRST_KAUR_LAB_USER_ID=${FIRST_KAUR_LAB_USER_ID}
+      - RUN_BOOTSTRAP=${RUN_BOOTSTRAP:-true}
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      # Named volume untuk uploads (production)
+      # Data akan tersimpan di Docker volume dan tidak hilang saat container restart/rebuild
+      - uploads_data:/app/uploads
+    depends_on:
+      registration_db:
+        condition: service_healthy
+      conduct_db:
+        condition: service_healthy
+      user_management_db:
+        condition: service_healthy
+      room_management_db:
+        condition: service_healthy
+      reporting_db:
+        condition: service_healthy
+      procurement_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - fri-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+  registration_db:
+    image: postgres:16-alpine
+    container_name: fri-registration-db
+    environment:
+      - POSTGRES_USER=${REGISTRATION_DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${REGISTRATION_DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${REGISTRATION_DB_NAME:-registration_db}
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+      - PGTZ=Asia/Jakarta  # PostgreSQL timezone
+    ports:
+      # Host port is separated from the container DB port to avoid conflicts with multiple DB services.
+      # Use REGISTRATION_HOST_PORT to control the host-side mapping without changing the DB port seen by the app.
+      - "${REGISTRATION_HOST_PORT:-5433}:5432"
+    volumes:
+      - registration_db_data:/var/lib/postgresql/data
+    networks:
+      - fri-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${REGISTRATION_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  conduct_db:
+    image: postgres:16-alpine
+    container_name: fri-conduct-db
+    environment:
+      - POSTGRES_USER=${CONDUCT_DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${CONDUCT_DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${CONDUCT_DB_NAME:-conduct_db}
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+      - PGTZ=Asia/Jakarta  # PostgreSQL timezone
+    ports:
+      - "${CONDUCT_HOST_PORT:-5434}:5432"
+    volumes:
+      - conduct_db_data:/var/lib/postgresql/data
+    networks:
+      - fri-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CONDUCT_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user_management_db:
+    image: postgres:16-alpine
+    container_name: fri-user-management-db
+    environment:
+      - POSTGRES_USER=${USER_MANAGEMENT_DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${USER_MANAGEMENT_DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${USER_MANAGEMENT_DB_NAME:-user_management_db}
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+      - PGTZ=Asia/Jakarta  # PostgreSQL timezone
+    ports:
+      # Use USER_MANAGEMENT_HOST_PORT for host-side port mapping; container still listens on 5432.
+      - "${USER_MANAGEMENT_HOST_PORT:-5435}:5432"
+    volumes:
+      - user_management_db_data:/var/lib/postgresql/data
+    networks:
+      - fri-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${USER_MANAGEMENT_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  room_management_db:
+    image: postgres:16-alpine
+    container_name: room_management_db
+    environment:
+      - POSTGRES_USER=${ROOM_MANAGEMENT_DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${ROOM_MANAGEMENT_DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${ROOM_MANAGEMENT_DB_NAME:-room_management_db}
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+      - PGTZ=Asia/Jakarta  # PostgreSQL timezone
+    ports:
+      - "${ROOM_MANAGEMENT_HOST_PORT:-5436}:5432"  # External:Internal - Changed to 5437 to avoid conflict with reporting_db
+    volumes:
+      - room_management_data:/var/lib/postgresql/data
+    networks:
+      - fri-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ROOM_MANAGEMENT_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  reporting_db:
+    image: postgres:16-alpine
+    container_name: fri-reporting-db
+    environment:
+      - POSTGRES_USER=${REPORTING_DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${REPORTING_DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${REPORTING_DB_NAME:-reporting_db}
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+      - PGTZ=Asia/Jakarta  # PostgreSQL timezone
+    ports:
+      - "${REPORTING_DB_EXTERNAL_PORT:-5437}:5432"
+    volumes:
+      - reporting_db_data:/var/lib/postgresql/data
+    networks:
+      - fri-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${REPORTING_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: fri-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    environment:
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+    volumes:
+      - redis_data:/data
+    networks:
+      - fri-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  procurement_db:
+    image: postgres:16-alpine
+    container_name: fri-procurement-db
+    environment:
+      - POSTGRES_USER=${PROCUREMENT_DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${PROCUREMENT_DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${PROCUREMENT_DB_NAME:-procurement_db}
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+      - PGTZ=Asia/Jakarta  # PostgreSQL timezone
+    ports:
+      # Use PROCUREMENT_HOST_PORT for host-side port mapping; container still listens on 5432.
+      - "${PROCUREMENT_HOST_PORT:-5444}:5432"
+    volumes:
+      - procurement_db_data:/var/lib/postgresql/data
+    networks:
+      - fri-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PROCUREMENT_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  registration_db_data:
+  conduct_db_data:
+  user_management_db_data:
+  room_management_data:
+  reporting_db_data:
+  redis_data:
+  procurement_db_data:
+  uploads_data:  # Named volume untuk uploads (production)
+
+networks:
+  fri-network:
+    driver: bridge
+

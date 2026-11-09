@@ -1,0 +1,7 @@
+# Auto-merge strategy for package-lock.json
+# This will automatically merge changes without manual conflict resolution
+package-lock.json merge=union
+
+# Shell scripts run inside Linux containers and must keep LF endings.
+*.sh text eol=lf
+

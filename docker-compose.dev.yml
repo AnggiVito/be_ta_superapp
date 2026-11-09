@@ -1,0 +1,230 @@
+# IMPORTANT: Gunakan script docker-compose-dev.sh untuk menjalankan file ini
+# atau gunakan: docker-compose --env-file .env.dev -f docker-compose.dev.yml <command>
+# 
+# Ini memastikan Docker Compose menggunakan .env.dev untuk variable substitution
+# bukan .env (production). Tanpa --env-file, Docker Compose akan menggunakan .env
+# untuk substitusi variabel seperti ${JWT_SECRET}, ${AUTH_GATEWAY_URL}, dll.
+
+name: fri-backend-dev
+
+services:
+  backend:
+    build: .
+    container_name: fri-backend-dev
+    ports:
+      - "3001:3000"
+    # Gunakan .env.dev sebagai env_file untuk Docker Compose variable substitution
+    # Ini memastikan Docker Compose menggunakan .env.dev bukan .env untuk substitusi
+    env_file:
+      - .env.dev
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - ENV_FILE=.env.dev  # Explicitly set env file untuk aplikasi - MUST be set before app starts
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+      # Variabel dari env_file + block environment di bawah; ENV_FILE=.env.dev di-load dengan
+      # override: false di envLoader sehingga nilai yang sudah di-set Docker tidak ditimpa file.
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      # Named volume untuk uploads (development)
+      # Data akan tersimpan di Docker volume terpisah dari production
+      - uploads_data_dev:/app/uploads
+    # Override entrypoint untuk development mode
+    # Install devDependencies dan jalankan dengan npm run dev (hot-reload)
+    entrypoint: /bin/sh
+    command: >
+      -c "
+      sh scripts/docker-install-if-needed.sh development;
+      echo 'Starting application in development mode with hot-reload...';
+      exec npm run dev
+      "
+    depends_on:
+      registration_db:
+        condition: service_healthy
+      conduct_db:
+        condition: service_healthy
+      user_management_db:
+        condition: service_healthy
+      room_management_db:
+        condition: service_healthy
+      reporting_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      procurement_db:
+        condition: service_healthy
+    networks:
+      - fri-network-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s  # Beri waktu 120 detik untuk startup (migration, bootstrap, dll)
+
+  registration_db:
+    image: postgres:16-alpine
+    container_name: fri-registration-db-dev
+    environment:
+      - POSTGRES_USER=${REGISTRATION_DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${REGISTRATION_DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${REGISTRATION_DB_NAME:-registration_db}
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+      - PGTZ=Asia/Jakarta  # PostgreSQL timezone
+    ports:
+      - "${REGISTRATION_HOST_PORT:-5438}:5432"
+    volumes:
+      - registration_db_data_dev:/var/lib/postgresql/data
+    networks:
+      - fri-network-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${REGISTRATION_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  conduct_db:
+    image: postgres:16-alpine
+    container_name: fri-conduct-db-dev
+    environment:
+      - POSTGRES_USER=${CONDUCT_DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${CONDUCT_DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${CONDUCT_DB_NAME:-conduct_db}
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+      - PGTZ=Asia/Jakarta  # PostgreSQL timezone
+    ports:
+      - "${CONDUCT_HOST_PORT:-5439}:5432"
+    volumes:
+      - conduct_db_data_dev:/var/lib/postgresql/data
+    networks:
+      - fri-network-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CONDUCT_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user_management_db:
+    image: postgres:16-alpine
+    container_name: fri-user-management-db-dev
+    environment:
+      - POSTGRES_USER=${USER_MANAGEMENT_DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${USER_MANAGEMENT_DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${USER_MANAGEMENT_DB_NAME:-user_management_db}
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+      - PGTZ=Asia/Jakarta  # PostgreSQL timezone
+    ports:
+      - "${USER_MANAGEMENT_HOST_PORT:-5440}:5432"
+    volumes:
+      - user_management_db_data_dev:/var/lib/postgresql/data
+    networks:
+      - fri-network-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${USER_MANAGEMENT_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  room_management_db:
+    image: postgres:16-alpine
+    container_name: fri-room-management-db-dev
+    environment:
+      - POSTGRES_USER=${ROOM_MANAGEMENT_DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${ROOM_MANAGEMENT_DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${ROOM_MANAGEMENT_DB_NAME:-room_management_db}
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+      - PGTZ=Asia/Jakarta  # PostgreSQL timezone
+    ports:
+      - "${ROOM_MANAGEMENT_HOST_PORT:-5441}:5432"
+    volumes:
+      - room_management_data_dev:/var/lib/postgresql/data
+    networks:
+      - fri-network-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ROOM_MANAGEMENT_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  reporting_db:
+    image: postgres:16-alpine
+    container_name: fri-reporting-db-dev
+    environment:
+      - POSTGRES_USER=${REPORTING_DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${REPORTING_DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${REPORTING_DB_NAME:-reporting_db}
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+      - PGTZ=Asia/Jakarta  # PostgreSQL timezone
+    ports:
+      - "${REPORTING_DB_EXTERNAL_PORT:-5442}:5432"
+    volumes:
+      - reporting_db_data_dev:/var/lib/postgresql/data
+    networks:
+      - fri-network-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${REPORTING_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: fri-redis-dev
+    ports:
+      - "6380:6379"
+    environment:
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+    volumes:
+      - redis_data_dev:/data
+    networks:
+      - fri-network-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  procurement_db:
+    image: postgres:16-alpine
+    container_name: fri-procurement-db-dev
+    environment:
+      - POSTGRES_USER=${PROCUREMENT_DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${PROCUREMENT_DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${PROCUREMENT_DB_NAME:-procurement_db}
+      - TZ=Asia/Jakarta  # Set timezone to GMT+7
+      - PGTZ=Asia/Jakarta  # PostgreSQL timezone
+    ports:
+      - "${PROCUREMENT_HOST_PORT:-5443}:5432"
+    volumes:
+      - procurement_db_data_dev:/var/lib/postgresql/data
+    networks:
+      - fri-network-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PROCUREMENT_DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  registration_db_data_dev:
+  conduct_db_data_dev:
+  user_management_db_data_dev:
+  room_management_data_dev:
+  reporting_db_data_dev:
+  redis_data_dev:
+  procurement_db_data_dev:
+  uploads_data_dev:  # Named volume untuk uploads (development)
+
+networks:
+  fri-network-dev:
+    driver: bridge
+
